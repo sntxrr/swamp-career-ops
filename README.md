@@ -56,12 +56,25 @@ deno test --allow-read extensions/models/tracker_test.ts
 
 (Use the swamp-bundled Deno at `~/.swamp/deno/deno` if Deno isn't on your PATH.)
 
+## Web dashboard
+
+A dependency-free dashboard reads the swamp snapshot and renders the funnel plus
+a sortable, filterable application table (light/dark aware):
+
+```bash
+node webui/server.mjs           # → http://localhost:8787
+```
+
+The server shells `swamp data get pipeline current --json` for `GET /api/pipeline`
+and re-runs `import-all` for `POST /api/refresh` (the Refresh button). Configure
+with `PORT`, `SWAMP_BIN`, and `CAREER_OPS_DIR` env vars.
+
 ## Roadmap
 
 - [x] `import-all` — markdown → swamp
+- [x] Web dashboard reading the swamp JSON (funnel + table, `webui/`)
 - [ ] `set-status` — swamp → markdown via career-ops `set-status.mjs`
 - [ ] `pipeline-status` report (funnel, conversion, attention flags)
-- [ ] Web dashboard reading the swamp JSON
 - [ ] Publish to the swamp registry
 
 ## License

@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>career-ops pipeline</title>
+<style>
+  :root {
+    color-scheme: light;
+    --plane:        #f9f9f7;
+    --surface:      #fcfcfb;
+    --text-1:       #0b0b0b;
+    --text-2:       #52514e;
+    --muted:        #898781;
+    --grid:         #e1e0d9;
+    --border:       rgba(11,11,11,0.10);
+    --accent:       #2a78d6;
+    /* status roles */
+    --st-evaluated: #898781;
+    --st-applied:   #2a78d6;
+    --st-responded: #1baf7a;
+    --st-interview: #4a3aa7;
+    --st-offer:     #0ca30c;
+    --st-hired:     #0ca30c;
+    --st-rejected:  #d03b3b;
+    --st-discarded: #898781;
+    --st-skip:      #b0aea8;
+    --chip-bg:      rgba(11,11,11,0.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --plane:   #0d0d0d;
+      --surface: #1a1a19;
+      --text-1:  #ffffff;
+      --text-2:  #c3c2b7;
+      --muted:   #898781;
+      --grid:    #2c2c2a;
+      --border:  rgba(255,255,255,0.10);
+      --accent:  #3987e5;
+      --st-evaluated: #a7a59d;
+      --st-applied:   #3987e5;
+      --st-responded: #199e70;
+      --st-interview: #9085e9;
+      --st-offer:     #0ca30c;
+      --st-hired:     #0ca30c;
+      --st-rejected:  #e66767;
+      --st-discarded: #898781;
+      --st-skip:      #6f6d68;
+      --chip-bg: rgba(255,255,255,0.07);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --plane:   #0d0d0d;
+    --surface: #1a1a19;
+    --text-1:  #ffffff;
+    --text-2:  #c3c2b7;
+    --muted:   #898781;
+    --grid:    #2c2c2a;
+    --border:  rgba(255,255,255,0.10);
+    --accent:  #3987e5;
+    --st-evaluated: #a7a59d;
+    --st-applied:   #3987e5;
+    --st-responded: #199e70;
+    --st-interview: #9085e9;
+    --st-offer:     #0ca30c;
+    --st-hired:     #0ca30c;
+    --st-rejected:  #e66767;
+    --st-discarded: #898781;
+    --st-skip:      #6f6d68;
+    --chip-bg: rgba(255,255,255,0.07);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--plane);
+    color: var(--text-1);
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 24px 20px 64px; }
+  header.top { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: 4px; }
+  h1 { font-size: 20px; margin: 0; letter-spacing: -0.01em; }
+  .sub { color: var(--text-2); font-size: 13px; }
+  .spacer { flex: 1 1 auto; }
+  button.act {
+    font: inherit; font-size: 13px; cursor: pointer;
+    background: var(--surface); color: var(--text-1);
+    border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px;
+  }
+  button.act:hover { border-color: var(--accent); }
+  button.act:disabled { opacity: 0.5; cursor: default; }
+
+  /* funnel tiles */
+  .funnel { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin: 18px 0 8px; }
+  .tile {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; position: relative; overflow: hidden;
+  }
+  .tile::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--tile-accent, var(--muted)); }
+  .tile .n { font-size: 26px; font-weight: 650; line-height: 1; }
+  .tile .l { font-size: 12px; color: var(--text-2); margin-top: 6px; display: flex; align-items: center; gap: 6px; }
+  .tile .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--tile-accent, var(--muted)); flex: none; }
+  .terminal { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0 18px; }
+  .term-pill { font-size: 12px; color: var(--text-2); background: var(--chip-bg); border-radius: 999px; padding: 3px 10px; }
+  .term-pill b { color: var(--text-1); font-variant-numeric: tabular-nums; }
+
+  /* controls */
+  .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 14px 0 10px; }
+  input.search {
+    font: inherit; font-size: 13px; padding: 7px 11px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface); color: var(--text-1); min-width: 220px;
+  }
+  input.search:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    font: inherit; font-size: 12px; cursor: pointer; user-select: none;
+    background: var(--chip-bg); color: var(--text-2);
+    border: 1px solid transparent; border-radius: 999px; padding: 4px 11px;
+  }
+  .chip[aria-pressed="true"] { color: var(--text-1); border-color: var(--border); background: var(--surface); }
+  .chip .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+
+  /* table */
+  .tablecard { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+  thead th {
+    font-size: 12px; color: var(--text-2); font-weight: 600; cursor: pointer;
+    white-space: nowrap; position: sticky; top: 0; background: var(--surface); user-select: none;
+  }
+  thead th .car { opacity: 0.4; font-size: 10px; margin-left: 3px; }
+  thead th[aria-sort] .car { opacity: 1; color: var(--accent); }
+  tbody tr:hover { background: var(--chip-bg); }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num, td.score { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.company { font-weight: 600; white-space: nowrap; }
+  td.role { max-width: 240px; }
+  td.notes { color: var(--text-2); font-size: 13px; max-width: 380px; }
+  td.notes .clip { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
+  td.notes .clip.open { -webkit-line-clamp: unset; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600;
+    padding: 2px 9px 2px 7px; border-radius: 999px; white-space: nowrap;
+    color: var(--bcol); background: color-mix(in srgb, var(--bcol) 14%, transparent);
+  }
+  .badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--bcol); }
+  .report { font-variant-numeric: tabular-nums; color: var(--text-2); font-size: 12px; }
+  .pdf-y { color: var(--st-offer); }
+  .pdf-n { color: var(--muted); }
+  .empty, .err { padding: 40px; text-align: center; color: var(--text-2); }
+  .err { color: var(--st-rejected); }
+  .foot { margin-top: 14px; font-size: 12px; color: var(--muted); }
+  .foot code { background: var(--chip-bg); padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>career-ops pipeline</h1>
+    <span class="sub" id="summary">loading…</span>
+    <span class="spacer"></span>
+    <button class="act" id="refresh" title="Re-import from data/applications.md">↻ Refresh</button>
+    <button class="act" id="theme" title="Toggle light/dark">◐</button>
+  </header>
+
+  <div class="funnel" id="funnel"></div>
+  <div class="terminal" id="terminal"></div>
+
+  <div class="controls">
+    <input class="search" id="search" type="search" placeholder="Filter company, role, notes…" autocomplete="off">
+    <div class="chips" id="statusChips"></div>
+  </div>
+
+  <div class="tablecard">
+    <table>
+      <thead><tr id="head"></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="empty" id="msg" hidden></div>
+  </div>
+
+  <div class="foot">
+    Source: swamp resource <code>pipeline / current</code> · model <code>@sntxrr/career-application</code>.
+    Refresh re-runs <code>import-all</code> against the tracker.
+  </div>
+</div>
+
+<script type="module">
+const STAGES = ["Evaluated","Applied","Responded","Interview","Offer","Hired"];
+const TERMINAL = ["Rejected","Discarded","SKIP"];
+const STATUS_ORDER = [...STAGES, ...TERMINAL];
+const stColor = (s) => `var(--st-${(s||"").toLowerCase()}, var(--muted))`;
+
+const COLS = [
+  { key: "num",     label: "#",       cls: "num",     get: r => r.num },
+  { key: "company", label: "Company", cls: "company", get: r => r.company },
+  { key: "role",    label: "Role",    cls: "role",    get: r => r.role },
+  { key: "scoreValue", label: "Score", cls: "score",  get: r => r.scoreValue },
+  { key: "status",  label: "Status",  cls: "status",  get: r => STATUS_ORDER.indexOf(r.status) },
+  { key: "date",    label: "Date",    cls: "num",     get: r => r.date },
+  { key: "pdf",     label: "PDF",     cls: "num",     get: r => r.pdf ? 1 : 0 },
+  { key: "reportNum", label: "Report", cls: "num",    get: r => r.reportNum },
+  { key: "notes",   label: "Notes",   cls: "notes",   get: r => r.notes, nosort: true },
+];
+
+let data = null;
+let sortKey = "num", sortDir = -1;
+const active = new Set();      // active status filters (empty = all)
+let query = "";
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+
+async function load(refresh = false) {
+  const btn = $("refresh"); btn.disabled = true;
+  const prev = btn.textContent; btn.textContent = refresh ? "↻ Refreshing…" : prev;
+  try {
+    const res = await fetch(refresh ? "/api/refresh" : "/api/pipeline", { method: refresh ? "POST" : "GET" });
+    const body = await res.json();
+    if (!res.ok || body.error) throw new Error(body.error || `HTTP ${res.status}`);
+    if (body.empty) { data = null; renderEmpty(body.message || "No pipeline data yet. Click Refresh to import."); return; }
+    data = body;
+    render();
+  } catch (e) {
+    renderEmpty("Error: " + e.message, true);
+  } finally {
+    btn.disabled = false; btn.textContent = prev;
+  }
+}
+
+function renderEmpty(text, isErr) {
+  $("funnel").innerHTML = ""; $("terminal").innerHTML = ""; $("statusChips").innerHTML = "";
+  $("head").innerHTML = ""; $("rows").innerHTML = "";
+  $("summary").textContent = "";
+  const m = $("msg"); m.hidden = false; m.textContent = text; m.className = isErr ? "err" : "empty";
+}
+
+function render() {
+  $("msg").hidden = true;
+  const apps = data.applications || [];
+  const f = data.funnel || {};
+  const when = data.generatedAt ? new Date(data.generatedAt).toLocaleString() : "—";
+  $("summary").textContent = `${data.total} applications · imported ${when}`;
+
+  // funnel tiles
+  $("funnel").innerHTML = STAGES.map(s => `
+    <div class="tile" style="--tile-accent:${stColor(s)}">
+      <div class="n">${f[s] || 0}</div>
+      <div class="l"><span class="dot"></span>${s}</div>
+    </div>`).join("");
+
+  // terminal pills
+  $("terminal").innerHTML = TERMINAL
+    .filter(s => f[s])
+    .map(s => `<span class="term-pill"><b>${f[s]}</b> ${s}</span>`).join("")
+    || `<span class="term-pill">no closed rows</span>`;
+
+  // status filter chips (only statuses present)
+  const present = STATUS_ORDER.filter(s => f[s]);
+  $("statusChips").innerHTML = present.map(s => `
+    <button class="chip" data-status="${esc(s)}" aria-pressed="${active.has(s)}">
+      <span class="dot" style="background:${stColor(s)}"></span>${s} ${f[s]}
+    </button>`).join("");
+
+  renderHead();
+  renderRows();
+}
+
+function renderHead() {
+  $("head").innerHTML = COLS.map(c => {
+    const sorted = sortKey === c.key;
+    const car = c.nosort ? "" : `<span class="car">${sorted ? (sortDir > 0 ? "▲" : "▼") : "▲"}</span>`;
+    const aria = sorted ? ` aria-sort="${sortDir > 0 ? "ascending" : "descending"}"` : "";
+    return `<th data-key="${c.key}"${c.nosort ? "" : aria}${c.nosort ? ' style="cursor:default"' : ""}>${esc(c.label)}${car}</th>`;
+  }).join("");
+}
+
+function renderRows() {
+  let apps = (data.applications || []).slice();
+  if (active.size) apps = apps.filter(r => active.has(r.status));
+  if (query) {
+    const q = query.toLowerCase();
+    apps = apps.filter(r => (`${r.company} ${r.role} ${r.notes}`).toLowerCase().includes(q));
+  }
+  const col = COLS.find(c => c.key === sortKey) || COLS[0];
+  apps.sort((a, b) => {
+    let x = col.get(a), y = col.get(b);
+    if (x == null) x = -Infinity; if (y == null) y = -Infinity;
+    if (typeof x === "string") return sortDir * x.localeCompare(y);
+    return sortDir * (x - y);
+  });
+
+  if (!apps.length) {
+    $("rows").innerHTML = `<tr><td colspan="${COLS.length}" class="empty">No rows match the filter.</td></tr>`;
+    return;
+  }
+  $("rows").innerHTML = apps.map(r => `
+    <tr>
+      <td class="num">${r.num}</td>
+      <td class="company">${esc(r.company)}</td>
+      <td class="role">${esc(r.role)}</td>
+      <td class="score">${r.score ? esc(r.score) : "—"}</td>
+      <td><span class="badge" style="--bcol:${stColor(r.status)}"><span class="dot"></span>${esc(r.status)}</span></td>
+      <td class="num">${esc(r.date)}</td>
+      <td class="num">${r.pdf ? '<span class="pdf-y">✅</span>' : '<span class="pdf-n">—</span>'}</td>
+      <td class="num"><span class="report">${esc(r.reportNum || "—")}</span></td>
+      <td class="notes"><div class="clip" title="click to expand">${esc(r.notes)}</div></td>
+    </tr>`).join("");
+}
+
+// events
+$("head").addEventListener("click", (e) => {
+  const th = e.target.closest("th"); if (!th) return;
+  const key = th.dataset.key; const col = COLS.find(c => c.key === key);
+  if (!col || col.nosort) return;
+  if (sortKey === key) sortDir = -sortDir;
+  else { sortKey = key; sortDir = (key === "num" || key === "scoreValue" || key === "date") ? -1 : 1; }
+  renderHead(); renderRows();
+});
+$("statusChips").addEventListener("click", (e) => {
+  const chip = e.target.closest(".chip"); if (!chip) return;
+  const s = chip.dataset.status;
+  active.has(s) ? active.delete(s) : active.add(s);
+  chip.setAttribute("aria-pressed", active.has(s));
+  renderRows();
+});
+$("rows").addEventListener("click", (e) => {
+  const clip = e.target.closest(".clip"); if (clip) clip.classList.toggle("open");
+});
+$("search").addEventListener("input", (e) => { query = e.target.value.trim(); renderRows(); });
+$("refresh").addEventListener("click", () => load(true));
+$("theme").addEventListener("click", () => {
+  const cur = document.documentElement.getAttribute("data-theme");
+  const next = cur === "dark" ? "light" : cur === "light" ? "dark"
+    : (matchMedia("(prefers-color-scheme: dark)").matches ? "light" : "dark");
+  document.documentElement.setAttribute("data-theme", next);
+});
+
+load();
+</script>
+</body>
+</html>
