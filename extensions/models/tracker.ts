@@ -116,3 +116,28 @@ export function computeFunnel(apps: Application[]): Funnel {
 export function padNum(num: number): string {
   return String(num).padStart(3, "0");
 }
+
+/** Metadata parsed from an evaluation report's header. */
+export interface ReportMeta {
+  /** The job posting URL (`**URL:**` line), or empty string when absent. */
+  url: string;
+  /** The posting legitimacy tier (`**Legitimacy:**` line), or empty string. */
+  legitimacy: string;
+}
+
+const URL_RE = /^\s*\*\*URL:\*\*\s*(.+?)\s*$/im;
+const LEGIT_RE = /^\s*\*\*Legitimacy:\*\*\s*(.+?)\s*$/im;
+
+/**
+ * Parse the `**URL:**` and `**Legitimacy:**` header lines from an evaluation
+ * report's markdown. Missing lines yield empty strings, so a report without the
+ * header (or content that isn't a report) is handled gracefully.
+ */
+export function parseReportMeta(markdown: string): ReportMeta {
+  const u = markdown.match(URL_RE);
+  const l = markdown.match(LEGIT_RE);
+  return {
+    url: u ? u[1].trim() : "",
+    legitimacy: l ? l[1].trim() : "",
+  };
+}

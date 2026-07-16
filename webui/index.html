@@ -163,6 +163,17 @@
   .editor button:disabled { opacity: 0.5; cursor: default; }
   .editor .emsg { font-size: 11px; color: var(--st-rejected); }
   .report { font-variant-numeric: tabular-nums; color: var(--text-2); font-size: 12px; }
+  .report a { color: var(--accent); text-decoration: none; }
+  .report a:hover { text-decoration: underline; }
+  .legit { white-space: nowrap; }
+  .legit-pill {
+    display: inline-flex; align-items: center; gap: 5px; font-size: 11px;
+    padding: 2px 8px; border-radius: 999px; background: var(--chip-bg); color: var(--text-2); white-space: nowrap;
+  }
+  .legit-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--lp, var(--muted)); flex: none; }
+  .legit-high { --lp: #0ca30c; }
+  .legit-caution { --lp: #fab219; }
+  .legit-sus { --lp: #d03b3b; }
   .pdf-y { color: var(--st-offer); }
   .pdf-n { color: var(--muted); }
   .empty, .err { padding: 40px; text-align: center; color: var(--text-2); }
@@ -208,6 +219,16 @@ const STAGES = ["Evaluated","Applied","Responded","Interview","Offer","Hired"];
 const TERMINAL = ["Rejected","Discarded","SKIP"];
 const STATUS_ORDER = [...STAGES, ...TERMINAL];
 const stColor = (s) => `var(--st-${(s||"").toLowerCase()}, var(--muted))`;
+const LEGIT = {
+  "High Confidence":      { cls: "legit-high", short: "High", rank: 1 },
+  "Proceed with Caution": { cls: "legit-caution", short: "Caution", rank: 2 },
+  "Suspicious":           { cls: "legit-sus", short: "Suspicious", rank: 3 },
+};
+function legitBadge(l) {
+  if (!l) return `<span class="report">—</span>`;
+  const m = LEGIT[l] || { cls: "", short: l };
+  return `<span class="legit-pill ${m.cls}" title="${esc(l)}"><span class="dot"></span>${esc(m.short)}</span>`;
+}
 
 const COLS = [
   { key: "num",     label: "#",       cls: "num",     get: r => r.num },
@@ -215,6 +236,7 @@ const COLS = [
   { key: "role",    label: "Role",    cls: "role",    get: r => r.role },
   { key: "scoreValue", label: "Score", cls: "score",  get: r => r.scoreValue },
   { key: "status",  label: "Status",  cls: "status",  get: r => STATUS_ORDER.indexOf(r.status) },
+  { key: "legitimacy", label: "Legit", cls: "legit", get: r => (LEGIT[r.legitimacy]?.rank ?? 0) },
   { key: "date",    label: "Date",    cls: "num",     get: r => r.date },
   { key: "pdf",     label: "PDF",     cls: "num",     get: r => r.pdf ? 1 : 0 },
   { key: "reportNum", label: "Report", cls: "num",    get: r => r.reportNum },
@@ -319,9 +341,10 @@ function renderRows() {
       <td class="role">${esc(r.role)}</td>
       <td class="score">${r.score ? esc(r.score) : "—"}</td>
       <td class="stcell"><span class="badge editable" title="click to change status" style="--bcol:${stColor(r.status)}"><span class="dot"></span>${esc(r.status)}</span></td>
+      <td class="legit">${legitBadge(r.legitimacy)}</td>
       <td class="num">${esc(r.date)}</td>
       <td class="num">${r.pdf ? '<span class="pdf-y">✅</span>' : '<span class="pdf-n">—</span>'}</td>
-      <td class="num"><span class="report">${esc(r.reportNum || "—")}</span></td>
+      <td class="num"><span class="report">${r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.reportNum || "open")}</a>` : esc(r.reportNum || "—")}</span></td>
       <td class="notes"><div class="clip" title="click to expand">${esc(r.notes)}</div></td>
     </tr>`).join("");
 }

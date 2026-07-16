@@ -62,6 +62,9 @@ Deno.test("import-all: writes one application resource per row plus the aggregat
   assert.equal(beta.scoreValue, 4.1);
   assert.equal(beta.pdf, true);
   assert.equal(typeof beta.updatedAt, "string");
+  // careerOpsDir is /unused here, so report enrichment degrades to empty strings.
+  assert.equal(beta.url, "");
+  assert.equal(beta.legitimacy, "");
 
   const agg = pipelines[0].data;
   assert.equal(agg.total, 2);
@@ -75,6 +78,33 @@ Deno.test("import-all: throws when the tracker file is missing (no writes)", asy
   const { context, writes } = fakeContext("/no/such/tracker-file.md");
   await assert.rejects(() => importAll({}, context));
   assert.equal(writes.length, 0);
+});
+
+Deno.test("import-all: enriches rows with url + legitimacy from report files", async () => {
+  const dir = await Deno.makeTempDir();
+  await Deno.mkdir(`${dir}/data`);
+  await Deno.mkdir(`${dir}/reports`);
+  await Deno.writeTextFile(`${dir}/data/applications.md`, TRACKER);
+  await Deno.writeTextFile(
+    `${dir}/reports/002-beta.md`,
+    "# 002 Beta\n\n**URL:** https://beta.example.com/jobs/42\n**Legitimacy:** High Confidence\n",
+  );
+  // Row 1 (Acme) points at 001-acme.md, which we deliberately do not create.
+
+  const { context, writes } = fakeContext(`${dir}/data/applications.md`);
+  context.globalArgs.careerOpsDir = dir;
+  await importAll({}, context);
+
+  const apps = writes.filter((w) => w.spec === "application");
+  const beta = apps.find((w) => w.name === "app-002")!.data;
+  const acme = apps.find((w) => w.name === "app-001")!.data;
+  assert.equal(beta.url, "https://beta.example.com/jobs/42");
+  assert.equal(beta.legitimacy, "High Confidence");
+  // Missing report degrades gracefully.
+  assert.equal(acme.url, "");
+  assert.equal(acme.legitimacy, "");
+
+  await Deno.remove(dir, { recursive: true });
 });
 
 // deno-lint-ignore no-explicit-any

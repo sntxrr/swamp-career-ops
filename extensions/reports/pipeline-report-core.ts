@@ -14,14 +14,24 @@
  */
 import { type Application } from "../models/tracker.ts";
 
+/** A snapshot application: the parsed tracker row plus model-added fields. */
+export interface SnapshotApp extends Application {
+  url?: string;
+  legitimacy?: string;
+  updatedAt?: string;
+}
+
 /** Snapshot shape produced by the model's `pipeline` resource. */
 export interface PipelineSnapshot {
   generatedAt: string;
   trackerPath: string;
   total: number;
   funnel: Record<string, number>;
-  applications: Application[];
+  applications: SnapshotApp[];
 }
+
+/** The legitimacy tier a clean posting carries; anything else is worth noting. */
+const CLEAN_LEGITIMACY = "High Confidence";
 
 /** Canonical status order (mirrors career-ops' states.yml). */
 export const CANON = [
@@ -58,6 +68,8 @@ export interface FlaggedRow {
   company: string;
   role: string;
   score: string;
+  /** Posting legitimacy tier, when the flag is legitimacy-related. */
+  legitimacy?: string;
 }
 
 /** Structured report output (the report's `json`). */
@@ -76,6 +88,7 @@ export interface ReportData {
   flags: {
     lowFitActive: FlaggedRow[];
     appliedNoPdf: FlaggedRow[];
+    legitimacyConcern: FlaggedRow[];
   };
 }
 
@@ -124,6 +137,17 @@ export function buildReportData(snap: PipelineSnapshot): ReportData {
       role: a.role,
       score: a.score,
     }));
+  const legitimacyConcern = apps
+    .filter((a) =>
+      ACTIVE.has(a.status) && a.legitimacy && a.legitimacy !== CLEAN_LEGITIMACY
+    )
+    .map((a) => ({
+      num: a.num,
+      company: a.company,
+      role: a.role,
+      score: a.score,
+      legitimacy: a.legitimacy ?? "",
+    }));
 
   return {
     generatedAt: snap.generatedAt,
@@ -137,7 +161,7 @@ export function buildReportData(snap: PipelineSnapshot): ReportData {
       interviewPlus: pct(interviewPlus, submitted),
       offerPlus: pct(offerPlus, submitted),
     },
-    flags: { lowFitActive, appliedNoPdf },
+    flags: { lowFitActive, appliedNoPdf, legitimacyConcern },
   };
 }
 
@@ -182,8 +206,10 @@ export function renderMarkdown(d: ReportData, trackerPath: string): string {
 
   lines.push("## Attention");
   lines.push("");
-  const { lowFitActive, appliedNoPdf } = d.flags;
-  if (!lowFitActive.length && !appliedNoPdf.length) {
+  const { lowFitActive, appliedNoPdf, legitimacyConcern } = d.flags;
+  if (
+    !lowFitActive.length && !appliedNoPdf.length && !legitimacyConcern.length
+  ) {
     lines.push("Nothing flagged.");
   } else {
     if (lowFitActive.length) {
@@ -192,6 +218,14 @@ export function renderMarkdown(d: ReportData, trackerPath: string): string {
         .join(", ");
       lines.push(
         `- ⚠️ **Active below the 4.0 fit bar** (${lowFitActive.length}): ${list}`,
+      );
+    }
+    if (legitimacyConcern.length) {
+      const list = legitimacyConcern
+        .map((r) => `#${r.num} ${r.company} (${r.legitimacy})`)
+        .join(", ");
+      lines.push(
+        `- ⚠️ **Active postings below High Confidence** (${legitimacyConcern.length}): ${list}`,
       );
     }
     if (appliedNoPdf.length) {

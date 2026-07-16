@@ -132,6 +132,53 @@ Deno.test("renderMarkdown: includes funnel table and snapshot caveat", () => {
   assert.match(md, /below the 4\.0 fit bar/);
 });
 
+function mkApp(over: Record<string, unknown>) {
+  return {
+    num: 1,
+    date: "2026-07-01",
+    company: "Co",
+    role: "Eng",
+    score: "4.5/5",
+    scoreValue: 4.5,
+    status: "Applied",
+    pdf: true,
+    reportNum: "001",
+    reportPath: "reports/001.md",
+    notes: "",
+    url: "",
+    legitimacy: "High Confidence",
+    updatedAt: "2026-07-16T20:00:00.000Z",
+    ...over,
+  };
+}
+
+Deno.test("buildReportData: flags active postings below High Confidence", () => {
+  const snap = {
+    generatedAt: "2026-07-16T20:00:00.000Z",
+    trackerPath: "/x",
+    total: 3,
+    funnel: { Applied: 2, Evaluated: 1 },
+    applications: [
+      mkApp({
+        num: 1,
+        company: "Cautious",
+        legitimacy: "Proceed with Caution",
+      }),
+      mkApp({ num: 2, company: "Clean", legitimacy: "High Confidence" }),
+      // Suspicious but only Evaluated (not active) → not flagged.
+      mkApp({
+        num: 3,
+        company: "Sus",
+        status: "Evaluated",
+        legitimacy: "Suspicious",
+      }),
+    ],
+  };
+  const d = buildReportData(snap);
+  assert.deepEqual(d.flags.legitimacyConcern.map((r) => r.num), [1]);
+  assert.equal(d.flags.legitimacyConcern[0].legitimacy, "Proceed with Caution");
+});
+
 Deno.test("buildReportData: empty pipeline is safe", () => {
   const d = buildReportData({
     generatedAt: "2026-07-16T00:00:00.000Z",

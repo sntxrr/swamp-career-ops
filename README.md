@@ -7,20 +7,23 @@ dashboard.
 
 ## What it does
 
-career-ops tracks job applications in a markdown table
-(`data/applications.md`). This extension mirrors that tracker into swamp:
+career-ops tracks job applications in a markdown table (`data/applications.md`).
+This extension mirrors that tracker into swamp:
 
-- **`@sntxrr/career-ops`** — a factory model. One model instance owns the
-  whole pipeline. Its `import-all` method reads the tracker and writes:
+- **`@sntxrr/career-ops`** — a factory model. One model instance owns the whole
+  pipeline. Its `import-all` method reads the tracker and writes:
   - one versioned **`application`** resource per row (`app-001`, `app-002`, …),
     so status changes accumulate as history over time; and
   - one **`pipeline`** aggregate resource (`current`) holding the full row set
     plus a status funnel — a single fetch for dashboards.
+  - Each row is enriched with the posting **URL** and **legitimacy** tier
+    (`High Confidence` / `Proceed with Caution` / `Suspicious`) parsed from its
+    evaluation report, when one exists.
 
-This is the **markdown → swamp** half of a bidirectional sync. The
-**swamp → markdown** half is the `set-status` method (below), which writes back
-through career-ops' canonical `set-status.mjs`; a `pipeline-status` report and a
-web dashboard round it out.
+This is the **markdown → swamp** half of a bidirectional sync. The **swamp →
+markdown** half is the `set-status` method (below), which writes back through
+career-ops' canonical `set-status.mjs`; a `pipeline-status` report and a web
+dashboard round it out.
 
 ## Usage
 
@@ -54,9 +57,9 @@ swamp model @sntxrr/career-ops method run set-status pipeline \
 
 ### Global arguments
 
-| Argument       | Required | Description                                                          |
-| -------------- | -------- | -------------------------------------------------------------------- |
-| `careerOpsDir` | yes      | Absolute path to the career-ops repository root.                     |
+| Argument       | Required | Description                                                                |
+| -------------- | -------- | -------------------------------------------------------------------------- |
+| `careerOpsDir` | yes      | Absolute path to the career-ops repository root.                           |
 | `trackerPath`  | no       | Override the tracker file path (defaults to `<dir>/data/applications.md`). |
 
 ## Development
@@ -70,44 +73,51 @@ deno test --allow-read extensions/**/*_test.ts
 
 ## Report
 
-`@sntxrr/career-ops-pipeline-status` is a swamp report attached to the model type — it runs
-after each `import-all` / `set-status` and summarizes the current snapshot:
-a funnel table, a submitted/active/closed roll-up, current-status shares, and
-attention flags (active applications below career-ops' 4.0 fit bar, or Applied
-without a CV PDF). View it:
+`@sntxrr/career-ops-pipeline-status` is a swamp report attached to the model
+type — it runs after each `import-all` / `set-status` and summarizes the current
+snapshot: a funnel table, a submitted/active/closed roll-up, current-status
+shares, and attention flags (active applications below career-ops' 4.0 fit bar,
+active postings below `High Confidence` legitimacy, or Applied without a CV
+PDF). View it:
 
 ```bash
 swamp report get @sntxrr/career-ops-pipeline-status --model pipeline --markdown
 swamp report get @sntxrr/career-ops-pipeline-status --model pipeline --json
 ```
 
-The funnel reflects *current* status, not historical cohorts — a role rejected
+The funnel reflects _current_ status, not historical cohorts — a role rejected
 after interviewing counts under `Rejected`. The report says so, to keep the
 numbers honest.
 
 ## Web dashboard
 
 A dependency-free dashboard reads the swamp snapshot and renders the funnel plus
-a sortable, filterable application table (light/dark aware):
+a sortable, filterable application table (light/dark aware) — with clickable
+posting URLs and colored legitimacy badges:
 
 ```bash
 node webui/server.mjs           # → http://localhost:8787
 ```
 
-The server shells `swamp data get pipeline current --json` for `GET /api/pipeline`,
-re-runs `import-all` for `POST /api/refresh` (the Refresh button), and runs the
-`set-status` method for `POST /api/set-status` (the click-a-status editor).
-Status changes are explicit-confirm — clicking a badge opens a state picker with
-an optional note and a Confirm button; nothing writes on a stray click.
-Configure with `PORT`, `SWAMP_BIN`, and `CAREER_OPS_DIR` env vars.
+The server shells `swamp data get pipeline current --json` for
+`GET /api/pipeline`, re-runs `import-all` for `POST /api/refresh` (the Refresh
+button), and runs the `set-status` method for `POST /api/set-status` (the
+click-a-status editor). Status changes are explicit-confirm — clicking a badge
+opens a state picker with an optional note and a Confirm button; nothing writes
+on a stray click. Configure with `PORT`, `SWAMP_BIN`, and `CAREER_OPS_DIR` env
+vars.
 
 ## Roadmap
 
 - [x] `import-all` — markdown → swamp
 - [x] Web dashboard reading the swamp JSON (funnel + table, `webui/`)
-- [x] `set-status` — swamp → markdown via career-ops `set-status.mjs` (+ dashboard editor)
+- [x] `set-status` — swamp → markdown via career-ops `set-status.mjs` (+
+      dashboard editor)
 - [x] `pipeline-status` report (funnel, roll-up, attention flags)
-- [ ] Publish to the swamp registry
+- [x] URL + legitimacy enrichment from evaluation reports (dashboard links +
+      badges)
+- [x] Published to the swamp registry
+      (`swamp extension pull @sntxrr/career-ops`)
 
 ## License
 

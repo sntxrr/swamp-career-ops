@@ -4,7 +4,12 @@
  * @module
  */
 import assert from "node:assert/strict";
-import { computeFunnel, padNum, parseTracker } from "./tracker.ts";
+import {
+  computeFunnel,
+  padNum,
+  parseReportMeta,
+  parseTracker,
+} from "./tracker.ts";
 
 const SAMPLE = `# Applications Tracker
 
@@ -75,4 +80,27 @@ Deno.test("padNum: zero-pads to three digits", () => {
   assert.equal(padNum(1), "001");
   assert.equal(padNum(17), "017");
   assert.equal(padNum(123), "123");
+});
+
+Deno.test("parseReportMeta: extracts URL and legitimacy from a report header", () => {
+  const report = `# 001 MongoDB
+
+**Score:** 4.2/5
+**URL:** https://www.mongodb.com/careers/jobs/7727896
+**Legitimacy:** Proceed with Caution
+**PDF:** yes
+
+## Block A
+...`;
+  const meta = parseReportMeta(report);
+  assert.equal(meta.url, "https://www.mongodb.com/careers/jobs/7727896");
+  assert.equal(meta.legitimacy, "Proceed with Caution");
+});
+
+Deno.test("parseReportMeta: missing lines yield empty strings", () => {
+  const meta = parseReportMeta(
+    "# A report with no header fields\n\nBody only.",
+  );
+  assert.equal(meta.url, "");
+  assert.equal(meta.legitimacy, "");
 });

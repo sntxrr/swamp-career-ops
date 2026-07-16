@@ -23,6 +23,7 @@ import {
   type Application,
   computeFunnel,
   padNum,
+  parseReportMeta,
   parseTracker,
 } from "./tracker.ts";
 
@@ -51,6 +52,8 @@ const ApplicationSchema = z.object({
   reportNum: z.string(),
   reportPath: z.string(),
   notes: z.string(),
+  url: z.string(),
+  legitimacy: z.string(),
   updatedAt: z.iso.datetime(),
 });
 
@@ -120,6 +123,7 @@ async function mirrorTracker(
   context: MethodContext,
 ): Promise<Array<{ name: string }>> {
   const trackerPath = resolveTrackerPath(context.globalArgs);
+  const careerOpsDir = resolveCareerOpsDir(context.globalArgs);
   const markdown = await Deno.readTextFile(trackerPath);
   const rows: Application[] = parseTracker(markdown);
   const generatedAt = new Date().toISOString();
@@ -128,7 +132,20 @@ async function mirrorTracker(
   const applications: Array<z.infer<typeof ApplicationSchema>> = [];
 
   for (const row of rows) {
-    const record = { ...row, updatedAt: generatedAt };
+    // Enrich from the row's evaluation report (URL + legitimacy tier), if present.
+    let url = "";
+    let legitimacy = "";
+    if (row.reportPath) {
+      try {
+        const report = await Deno.readTextFile(
+          `${careerOpsDir}/${row.reportPath}`,
+        );
+        ({ url, legitimacy } = parseReportMeta(report));
+      } catch {
+        // Report file missing or unreadable — leave url/legitimacy empty.
+      }
+    }
+    const record = { ...row, url, legitimacy, updatedAt: generatedAt };
     applications.push(record);
     handles.push(
       await context.writeResource(
@@ -200,7 +217,7 @@ async function runSetStatus(
 /** Model definition for the career-ops application pipeline. */
 export const model = {
   type: "@sntxrr/career-ops",
-  version: "2026.07.16.1",
+  version: "2026.07.16.2",
   globalArguments: GlobalArgsSchema,
   reports: ["@sntxrr/career-ops-pipeline-status"],
   checks: {
