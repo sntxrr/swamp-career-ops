@@ -1,0 +1,16 @@
+manifestVersion: 1
+name: "@sntxrr/career-ops"
+version: "2026.07.16.1"
+description: "Mirrors the career-ops job-application tracker into swamp with bidirectional status write-back, and reports the pipeline funnel."
+
+repository: https://github.com/sntxrr/swamp-career-ops
+
+additionalFiles:
+  - README.md
+  - LICENSE.md
+
+models:
+  - career-ops.ts
+
+reports:
+  - pipeline-status.ts

@@ -1,7 +1,7 @@
 /**
  * Pure report logic for the pipeline-status report.
  *
- * Turns a pipeline snapshot (as written by the `@sntxrr/career-application`
+ * Turns a pipeline snapshot (as written by the `@sntxrr/career-ops`
  * model) into a funnel roll-up plus career-ops-aware attention flags, and
  * renders it to markdown. No swamp/Deno dependency, so it is unit-testable.
  *
@@ -68,14 +68,21 @@ export interface ReportData {
   active: number;
   closed: number;
   funnel: Array<{ status: string; count: number; pct: number }>;
-  shareOfSubmitted: { respondedPlus: number; interviewPlus: number; offerPlus: number };
+  shareOfSubmitted: {
+    respondedPlus: number;
+    interviewPlus: number;
+    offerPlus: number;
+  };
   flags: {
     lowFitActive: FlaggedRow[];
     appliedNoPdf: FlaggedRow[];
   };
 }
 
-const pct = (n: number, d: number): number => (d > 0 ? Math.round((n / d) * 100) : 0);
+const pct = (
+  n: number,
+  d: number,
+): number => (d > 0 ? Math.round((n / d) * 100) : 0);
 const sum = (f: Record<string, number>, keys: Iterable<string>): number => {
   let t = 0;
   for (const k of keys) t += f[k] ?? 0;
@@ -100,11 +107,23 @@ export function buildReportData(snap: PipelineSnapshot): ReportData {
 
   const apps = snap.applications ?? [];
   const lowFitActive = apps
-    .filter((a) => ACTIVE.has(a.status) && a.scoreValue != null && a.scoreValue < FIT_BAR)
-    .map((a) => ({ num: a.num, company: a.company, role: a.role, score: a.score }));
+    .filter((a) =>
+      ACTIVE.has(a.status) && a.scoreValue != null && a.scoreValue < FIT_BAR
+    )
+    .map((a) => ({
+      num: a.num,
+      company: a.company,
+      role: a.role,
+      score: a.score,
+    }));
   const appliedNoPdf = apps
     .filter((a) => a.status === "Applied" && !a.pdf)
-    .map((a) => ({ num: a.num, company: a.company, role: a.role, score: a.score }));
+    .map((a) => ({
+      num: a.num,
+      company: a.company,
+      role: a.role,
+      score: a.score,
+    }));
 
   return {
     generatedAt: snap.generatedAt,
@@ -143,7 +162,11 @@ export function renderMarkdown(d: ReportData, trackerPath: string): string {
 
   lines.push("## Roll-up");
   lines.push("");
-  lines.push(`- **Submitted:** ${d.submitted} of ${d.total} (${pct(d.submitted, d.total)}%)`);
+  lines.push(
+    `- **Submitted:** ${d.submitted} of ${d.total} (${
+      pct(d.submitted, d.total)
+    }%)`,
+  );
   lines.push(`- **Active** (Applied–Offer): ${d.active}`);
   lines.push(`- **Closed** (Hired/Rejected/Discarded): ${d.closed}`);
   lines.push("");
@@ -167,11 +190,15 @@ export function renderMarkdown(d: ReportData, trackerPath: string): string {
       const list = lowFitActive
         .map((r) => `#${r.num} ${r.company} (${r.score})`)
         .join(", ");
-      lines.push(`- ⚠️ **Active below the 4.0 fit bar** (${lowFitActive.length}): ${list}`);
+      lines.push(
+        `- ⚠️ **Active below the 4.0 fit bar** (${lowFitActive.length}): ${list}`,
+      );
     }
     if (appliedNoPdf.length) {
       const list = appliedNoPdf.map((r) => `#${r.num} ${r.company}`).join(", ");
-      lines.push(`- ⚠️ **Applied without a CV PDF** (${appliedNoPdf.length}): ${list}`);
+      lines.push(
+        `- ⚠️ **Applied without a CV PDF** (${appliedNoPdf.length}): ${list}`,
+      );
     }
   }
   lines.push("");

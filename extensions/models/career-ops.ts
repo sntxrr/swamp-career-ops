@@ -1,5 +1,5 @@
 /**
- * `@sntxrr/career-application` — models the career-ops job-application pipeline
+ * `@sntxrr/career-ops` — models the career-ops job-application pipeline
  * as swamp data.
  *
  * A single model instance owns the whole pipeline:
@@ -71,7 +71,9 @@ const SetStatusArgsSchema = z.object({
   status: z.string().describe(
     "New canonical status (Evaluated, Applied, Responded, Interview, Offer, Rejected, Discarded, SKIP, Hired).",
   ),
-  note: z.string().optional().describe("Note appended to the row's Notes cell."),
+  note: z.string().optional().describe(
+    "Note appended to the row's Notes cell.",
+  ),
   role: z.string().optional().describe(
     "Role hint to disambiguate when a company has multiple rows.",
   ),
@@ -197,10 +199,10 @@ async function runSetStatus(
 
 /** Model definition for the career-ops application pipeline. */
 export const model = {
-  type: "@sntxrr/career-application",
-  version: "2026.07.16.3",
+  type: "@sntxrr/career-ops",
+  version: "2026.07.16.1",
   globalArguments: GlobalArgsSchema,
-  reports: ["@sntxrr/pipeline-status"],
+  reports: ["@sntxrr/career-ops-pipeline-status"],
   resources: {
     "application": {
       description: "A single application row mirrored from the tracker.",
@@ -236,7 +238,7 @@ export const model = {
         context: MethodContext,
       ): Promise<{ dataHandles: Array<{ name: string }> }> => {
         const careerOpsDir = resolveCareerOpsDir(context.globalArgs);
-        const result = await runSetStatus(careerOpsDir, args);
+        await runSetStatus(careerOpsDir, args);
         context.logger.info(
           "set-status {selector} → {status}{dry}",
           {

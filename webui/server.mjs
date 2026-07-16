@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * webui/server.mjs — thin dashboard server for the @sntxrr/career-application
+ * webui/server.mjs — thin dashboard server for the @sntxrr/career-ops
  * swamp model.
  *
  * It serves a self-contained page and two JSON endpoints that shell out to
@@ -29,7 +29,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = dirname(HERE);
 const PORT = Number(process.env.PORT) || 8787;
 const SWAMP = process.env.SWAMP_BIN || "swamp";
-const MODEL = "@sntxrr/career-application";
+const MODEL = "@sntxrr/career-ops";
 const INSTANCE = "pipeline";
 
 async function swamp(args) {

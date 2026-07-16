@@ -10,7 +10,7 @@ dashboard.
 career-ops tracks job applications in a markdown table
 (`data/applications.md`). This extension mirrors that tracker into swamp:
 
-- **`@sntxrr/career-application`** — a factory model. One model instance owns the
+- **`@sntxrr/career-ops`** — a factory model. One model instance owns the
   whole pipeline. Its `import-all` method reads the tracker and writes:
   - one versioned **`application`** resource per row (`app-001`, `app-002`, …),
     so status changes accumulate as history over time; and
@@ -18,16 +18,16 @@ career-ops tracks job applications in a markdown table
     plus a status funnel — a single fetch for dashboards.
 
 This is the **markdown → swamp** half of a bidirectional sync. The
-**swamp → markdown** half (a `set-status` method that writes back through
-career-ops' canonical `set-status.mjs`) and a `pipeline-status` report are on the
-roadmap.
+**swamp → markdown** half is the `set-status` method (below), which writes back
+through career-ops' canonical `set-status.mjs`; a `pipeline-status` report and a
+web dashboard round it out.
 
 ## Usage
 
 Point the model at your career-ops checkout and import:
 
 ```bash
-swamp model @sntxrr/career-application method run import-all pipeline \
+swamp model @sntxrr/career-ops method run import-all pipeline \
   --input careerOpsDir=/absolute/path/to/career-ops
 ```
 
@@ -46,7 +46,7 @@ atomic), so the markdown tracker stays the single source of truth. Add
 `--input dryRun=true` to validate without writing:
 
 ```bash
-swamp model @sntxrr/career-application method run set-status pipeline \
+swamp model @sntxrr/career-ops method run set-status pipeline \
   --input careerOpsDir=/absolute/path/to/career-ops \
   --input selector=4 --input status=Interview \
   --input note="recruiter screen booked"
@@ -62,23 +62,23 @@ swamp model @sntxrr/career-application method run set-status pipeline \
 ## Development
 
 ```bash
-deno check extensions/models/career-application.ts extensions/models/tracker.ts
-deno test --allow-read extensions/models/tracker_test.ts
+deno check extensions/models/career-ops.ts extensions/models/tracker.ts
+deno test --allow-read extensions/**/*_test.ts
 ```
 
 (Use the swamp-bundled Deno at `~/.swamp/deno/deno` if Deno isn't on your PATH.)
 
 ## Report
 
-`@sntxrr/pipeline-status` is a swamp report attached to the model type — it runs
+`@sntxrr/career-ops-pipeline-status` is a swamp report attached to the model type — it runs
 after each `import-all` / `set-status` and summarizes the current snapshot:
 a funnel table, a submitted/active/closed roll-up, current-status shares, and
 attention flags (active applications below career-ops' 4.0 fit bar, or Applied
 without a CV PDF). View it:
 
 ```bash
-swamp report get @sntxrr/pipeline-status --model pipeline --markdown
-swamp report get @sntxrr/pipeline-status --model pipeline --json
+swamp report get @sntxrr/career-ops-pipeline-status --model pipeline --markdown
+swamp report get @sntxrr/career-ops-pipeline-status --model pipeline --json
 ```
 
 The funnel reflects *current* status, not historical cohorts — a role rejected
@@ -111,4 +111,4 @@ Configure with `PORT`, `SWAMP_BIN`, and `CAREER_OPS_DIR` env vars.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE.md](LICENSE.md).

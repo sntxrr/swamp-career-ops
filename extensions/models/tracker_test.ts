@@ -48,7 +48,8 @@ Deno.test("parseTracker: skips header and separator rows", () => {
 });
 
 Deno.test("parseTracker: unparseable score becomes null", () => {
-  const md = `| # | Date | Company | Role | Score | Status | PDF | Report | Notes |
+  const md =
+    `| # | Date | Company | Role | Score | Status | PDF | Report | Notes |
 |---|---|---|---|---|---|---|---|---|
 | 2 | 2026-01-01 | Acme | Engineer | TBD | Evaluated | ❌ | [002](reports/x.md) | pending |`;
   const [row] = parseTracker(md);
@@ -57,7 +58,8 @@ Deno.test("parseTracker: unparseable score becomes null", () => {
 });
 
 Deno.test("parseTracker: notes containing a pipe are preserved", () => {
-  const md = `| # | Date | Company | Role | Score | Status | PDF | Report | Notes |
+  const md =
+    `| # | Date | Company | Role | Score | Status | PDF | Report | Notes |
 |---|---|---|---|---|---|---|---|---|
 | 3 | 2026-01-02 | Beta | Dev | 3.0/5 | Applied | ✅ | [003](reports/y.md) | remote | onsite optional |`;
   const [row] = parseTracker(md);

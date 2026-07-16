@@ -34,12 +34,54 @@ const SNAP: PipelineSnapshot = {
   total: 6,
   funnel: { Evaluated: 2, Applied: 2, Interview: 1, Rejected: 1 },
   applications: [
-    app({ num: 1, company: "Acme", status: "Applied", scoreValue: 4.2, score: "4.2/5", pdf: true }),
-    app({ num: 2, company: "LowCo", status: "Applied", scoreValue: 3.1, score: "3.1/5", pdf: false }),
-    app({ num: 3, company: "MidCo", status: "Interview", scoreValue: 4.6, score: "4.6/5", pdf: true }),
-    app({ num: 4, company: "Nope", status: "Rejected", scoreValue: 2.0, score: "2.0/5", pdf: false }),
-    app({ num: 5, company: "Eval1", status: "Evaluated", scoreValue: 3.5, score: "3.5/5", pdf: false }),
-    app({ num: 6, company: "Eval2", status: "Evaluated", scoreValue: 4.9, score: "4.9/5", pdf: false }),
+    app({
+      num: 1,
+      company: "Acme",
+      status: "Applied",
+      scoreValue: 4.2,
+      score: "4.2/5",
+      pdf: true,
+    }),
+    app({
+      num: 2,
+      company: "LowCo",
+      status: "Applied",
+      scoreValue: 3.1,
+      score: "3.1/5",
+      pdf: false,
+    }),
+    app({
+      num: 3,
+      company: "MidCo",
+      status: "Interview",
+      scoreValue: 4.6,
+      score: "4.6/5",
+      pdf: true,
+    }),
+    app({
+      num: 4,
+      company: "Nope",
+      status: "Rejected",
+      scoreValue: 2.0,
+      score: "2.0/5",
+      pdf: false,
+    }),
+    app({
+      num: 5,
+      company: "Eval1",
+      status: "Evaluated",
+      scoreValue: 3.5,
+      score: "3.5/5",
+      pdf: false,
+    }),
+    app({
+      num: 6,
+      company: "Eval2",
+      status: "Evaluated",
+      scoreValue: 4.9,
+      score: "4.9/5",
+      pdf: false,
+    }),
   ],
 };
 
@@ -53,7 +95,12 @@ Deno.test("buildReportData: roll-up counts", () => {
 
 Deno.test("buildReportData: funnel skips zero stages, keeps canonical order", () => {
   const d = buildReportData(SNAP);
-  assert.deepEqual(d.funnel.map((r) => r.status), ["Evaluated", "Applied", "Interview", "Rejected"]);
+  assert.deepEqual(d.funnel.map((r) => r.status), [
+    "Evaluated",
+    "Applied",
+    "Interview",
+    "Rejected",
+  ]);
   assert.equal(d.funnel[0].pct, 33); // 2/6
 });
 
