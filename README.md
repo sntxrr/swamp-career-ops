@@ -40,6 +40,18 @@ swamp data get pipeline current --json
 By default the tracker is read from `<careerOpsDir>/data/applications.md`;
 override with `--input trackerPath=/some/other/tracker.md`.
 
+Change a row's status and re-mirror (swamp → markdown → swamp). This routes
+through career-ops' canonical `set-status.mjs` writer (locked, validated,
+atomic), so the markdown tracker stays the single source of truth. Add
+`--input dryRun=true` to validate without writing:
+
+```bash
+swamp model @sntxrr/career-application method run set-status pipeline \
+  --input careerOpsDir=/absolute/path/to/career-ops \
+  --input selector=4 --input status=Interview \
+  --input note="recruiter screen booked"
+```
+
 ### Global arguments
 
 | Argument       | Required | Description                                                          |
@@ -65,15 +77,18 @@ a sortable, filterable application table (light/dark aware):
 node webui/server.mjs           # → http://localhost:8787
 ```
 
-The server shells `swamp data get pipeline current --json` for `GET /api/pipeline`
-and re-runs `import-all` for `POST /api/refresh` (the Refresh button). Configure
-with `PORT`, `SWAMP_BIN`, and `CAREER_OPS_DIR` env vars.
+The server shells `swamp data get pipeline current --json` for `GET /api/pipeline`,
+re-runs `import-all` for `POST /api/refresh` (the Refresh button), and runs the
+`set-status` method for `POST /api/set-status` (the click-a-status editor).
+Status changes are explicit-confirm — clicking a badge opens a state picker with
+an optional note and a Confirm button; nothing writes on a stray click.
+Configure with `PORT`, `SWAMP_BIN`, and `CAREER_OPS_DIR` env vars.
 
 ## Roadmap
 
 - [x] `import-all` — markdown → swamp
 - [x] Web dashboard reading the swamp JSON (funnel + table, `webui/`)
-- [ ] `set-status` — swamp → markdown via career-ops `set-status.mjs`
+- [x] `set-status` — swamp → markdown via career-ops `set-status.mjs` (+ dashboard editor)
 - [ ] `pipeline-status` report (funnel, conversion, attention flags)
 - [ ] Publish to the swamp registry
 

@@ -147,6 +147,21 @@
     color: var(--bcol); background: color-mix(in srgb, var(--bcol) 14%, transparent);
   }
   .badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--bcol); }
+  .badge.editable { cursor: pointer; }
+  .badge.editable:hover { outline: 2px solid color-mix(in srgb, var(--bcol) 40%, transparent); outline-offset: 1px; }
+  .editor { display: flex; flex-direction: column; gap: 6px; min-width: 190px; }
+  .editor select, .editor input {
+    font: inherit; font-size: 12px; padding: 5px 7px; border-radius: 6px;
+    border: 1px solid var(--border); background: var(--plane); color: var(--text-1);
+  }
+  .editor .btns { display: flex; gap: 6px; }
+  .editor button {
+    font: inherit; font-size: 12px; cursor: pointer; padding: 4px 10px; border-radius: 6px;
+    border: 1px solid var(--border); background: var(--surface); color: var(--text-1);
+  }
+  .editor button.ok { background: var(--st-offer); color: #fff; border-color: transparent; font-weight: 600; }
+  .editor button:disabled { opacity: 0.5; cursor: default; }
+  .editor .emsg { font-size: 11px; color: var(--st-rejected); }
   .report { font-variant-numeric: tabular-nums; color: var(--text-2); font-size: 12px; }
   .pdf-y { color: var(--st-offer); }
   .pdf-n { color: var(--muted); }
@@ -298,12 +313,12 @@ function renderRows() {
     return;
   }
   $("rows").innerHTML = apps.map(r => `
-    <tr>
+    <tr data-num="${r.num}">
       <td class="num">${r.num}</td>
       <td class="company">${esc(r.company)}</td>
       <td class="role">${esc(r.role)}</td>
       <td class="score">${r.score ? esc(r.score) : "—"}</td>
-      <td><span class="badge" style="--bcol:${stColor(r.status)}"><span class="dot"></span>${esc(r.status)}</span></td>
+      <td class="stcell"><span class="badge editable" title="click to change status" style="--bcol:${stColor(r.status)}"><span class="dot"></span>${esc(r.status)}</span></td>
       <td class="num">${esc(r.date)}</td>
       <td class="num">${r.pdf ? '<span class="pdf-y">✅</span>' : '<span class="pdf-n">—</span>'}</td>
       <td class="num"><span class="report">${esc(r.reportNum || "—")}</span></td>
@@ -328,8 +343,58 @@ $("statusChips").addEventListener("click", (e) => {
   renderRows();
 });
 $("rows").addEventListener("click", (e) => {
-  const clip = e.target.closest(".clip"); if (clip) clip.classList.toggle("open");
+  const clip = e.target.closest(".clip"); if (clip) { clip.classList.toggle("open"); return; }
+  const badge = e.target.closest(".badge.editable");
+  if (badge) openEditor(badge);
 });
+
+function openEditor(badge) {
+  const cell = badge.closest(".stcell");
+  const tr = badge.closest("tr");
+  const num = tr.dataset.num;
+  const current = badge.textContent.trim();
+  if (cell.querySelector(".editor")) return; // already open
+  const opts = STATUS_ORDER.map(s => `<option value="${esc(s)}"${s === current ? " selected" : ""}>${esc(s)}</option>`).join("");
+  const ed = document.createElement("div");
+  ed.className = "editor";
+  ed.innerHTML = `
+    <select aria-label="new status">${opts}</select>
+    <input type="text" placeholder="note (optional)" maxlength="400">
+    <div class="btns">
+      <button class="ok">Confirm</button>
+      <button class="cancel">Cancel</button>
+    </div>
+    <div class="emsg" hidden></div>`;
+  badge.style.display = "none";
+  cell.appendChild(ed);
+  const sel = ed.querySelector("select");
+  const note = ed.querySelector("input");
+  const emsg = ed.querySelector(".emsg");
+  sel.focus();
+
+  const close = () => { ed.remove(); badge.style.display = ""; };
+  ed.querySelector(".cancel").addEventListener("click", close);
+  ed.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+  ed.querySelector(".ok").addEventListener("click", async () => {
+    const status = sel.value;
+    if (status === current && !note.value.trim()) { close(); return; }
+    const btn = ed.querySelector(".ok");
+    btn.disabled = true; btn.textContent = "Saving…"; emsg.hidden = true;
+    try {
+      const res = await fetch("/api/set-status", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ selector: num, status, note: note.value.trim() || undefined }),
+      });
+      const body = await res.json();
+      if (!res.ok || body.error) throw new Error(body.error || `HTTP ${res.status}`);
+      data = body;         // server returns the fresh pipeline
+      render();
+    } catch (err) {
+      emsg.hidden = false; emsg.textContent = String(err.message).slice(0, 160);
+      btn.disabled = false; btn.textContent = "Confirm";
+    }
+  });
+}
 $("search").addEventListener("input", (e) => { query = e.target.value.trim(); renderRows(); });
 $("refresh").addEventListener("click", () => load(true));
 $("theme").addEventListener("click", () => {

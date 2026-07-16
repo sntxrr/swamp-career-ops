@@ -94,6 +94,45 @@ async function refresh() {
   return getPipeline();
 }
 
+/**
+ * Change one row's status/note via the swamp set-status method (which routes
+ * through career-ops' set-status.mjs, then re-mirrors). Returns the fresh
+ * pipeline. A dry run validates without writing the tracker.
+ */
+async function setStatus({ selector, status, note, dryRun }) {
+  if (selector == null || selector === "") throw new Error("selector is required");
+  if (!status) throw new Error("status is required");
+  const careerOpsDir = await resolveCareerOpsDir();
+  const args = [
+    "model", MODEL, "method", "run", "set-status", INSTANCE,
+    "--input", `careerOpsDir=${careerOpsDir}`,
+    "--input", `selector=${selector}`,
+    "--input", `status=${status}`,
+  ];
+  if (note) args.push("--input", `note=${note}`);
+  if (dryRun) args.push("--input", "dryRun=true");
+  await swamp(args);
+  if (dryRun) return { ok: true, dryRun: true };
+  return getPipeline();
+}
+
+/** Read and JSON-parse a request body (capped). */
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let data = "", size = 0;
+    req.on("data", (c) => {
+      size += c.length;
+      if (size > 64 * 1024) { reject(new Error("body too large")); req.destroy(); return; }
+      data += c;
+    });
+    req.on("end", () => {
+      try { resolve(data ? JSON.parse(data) : {}); }
+      catch { reject(new Error("invalid JSON body")); }
+    });
+    req.on("error", reject);
+  });
+}
+
 function sendJSON(res, code, obj) {
   const buf = Buffer.from(JSON.stringify(obj));
   res.writeHead(code, { "content-type": "application/json; charset=utf-8", "content-length": buf.length });
@@ -113,6 +152,9 @@ const server = createServer(async (req, res) => {
     }
     if (req.method === "POST" && url.pathname === "/api/refresh") {
       return sendJSON(res, 200, await refresh());
+    }
+    if (req.method === "POST" && url.pathname === "/api/set-status") {
+      return sendJSON(res, 200, await setStatus(await readBody(req)));
     }
     sendJSON(res, 404, { error: "not found" });
   } catch (e) {
