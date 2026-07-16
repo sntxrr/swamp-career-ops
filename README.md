@@ -68,6 +68,23 @@ deno test --allow-read extensions/models/tracker_test.ts
 
 (Use the swamp-bundled Deno at `~/.swamp/deno/deno` if Deno isn't on your PATH.)
 
+## Report
+
+`@sntxrr/pipeline-status` is a swamp report attached to the model type — it runs
+after each `import-all` / `set-status` and summarizes the current snapshot:
+a funnel table, a submitted/active/closed roll-up, current-status shares, and
+attention flags (active applications below career-ops' 4.0 fit bar, or Applied
+without a CV PDF). View it:
+
+```bash
+swamp report get @sntxrr/pipeline-status --model pipeline --markdown
+swamp report get @sntxrr/pipeline-status --model pipeline --json
+```
+
+The funnel reflects *current* status, not historical cohorts — a role rejected
+after interviewing counts under `Rejected`. The report says so, to keep the
+numbers honest.
+
 ## Web dashboard
 
 A dependency-free dashboard reads the swamp snapshot and renders the funnel plus
@@ -89,7 +106,7 @@ Configure with `PORT`, `SWAMP_BIN`, and `CAREER_OPS_DIR` env vars.
 - [x] `import-all` — markdown → swamp
 - [x] Web dashboard reading the swamp JSON (funnel + table, `webui/`)
 - [x] `set-status` — swamp → markdown via career-ops `set-status.mjs` (+ dashboard editor)
-- [ ] `pipeline-status` report (funnel, conversion, attention flags)
+- [x] `pipeline-status` report (funnel, roll-up, attention flags)
 - [ ] Publish to the swamp registry
 
 ## License

@@ -198,8 +198,9 @@ async function runSetStatus(
 /** Model definition for the career-ops application pipeline. */
 export const model = {
   type: "@sntxrr/career-application",
-  version: "2026.07.16.2",
+  version: "2026.07.16.3",
   globalArguments: GlobalArgsSchema,
+  reports: ["@sntxrr/pipeline-status"],
   resources: {
     "application": {
       description: "A single application row mirrored from the tracker.",
