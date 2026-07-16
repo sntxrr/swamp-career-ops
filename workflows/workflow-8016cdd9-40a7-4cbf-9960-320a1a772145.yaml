@@ -1,0 +1,22 @@
+id: 8016cdd9-40a7-4cbf-9960-320a1a772145
+name: career-ops-refresh
+tags: {}
+jobs:
+  - name: refresh
+    description: Mirror the career-ops tracker into swamp and produce the pipeline-status report.
+    steps:
+      - name: import-all
+        description: Read data/applications.md and mirror every row (import-all also triggers the pipeline-status report).
+        task:
+          type: model_method
+          modelType: "@sntxrr/career-ops"
+          modelName: pipeline
+          methodName: import-all
+          globalArgs:
+            careerOpsDir: "${{ inputs.careerOpsDir }}"
+        dependsOn: []
+        weight: 0
+        allowFailure: false
+    dependsOn: []
+    weight: 0
+version: 1
