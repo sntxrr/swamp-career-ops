@@ -203,6 +203,35 @@ export const model = {
   version: "2026.07.16.1",
   globalArguments: GlobalArgsSchema,
   reports: ["@sntxrr/career-ops-pipeline-status"],
+  checks: {
+    "career-ops-present": {
+      description:
+        "Verify the career-ops repo and its set-status.mjs writer exist before write-back.",
+      labels: ["dependency"],
+      appliesTo: ["set-status"],
+      execute: async (
+        context: { globalArgs: GlobalArgs },
+      ): Promise<{ pass: boolean; errors?: string[] }> => {
+        const dir = resolveCareerOpsDir(context.globalArgs);
+        const errors: string[] = [];
+        try {
+          if (!(await Deno.stat(dir)).isDirectory) {
+            errors.push(`careerOpsDir is not a directory: ${dir}`);
+          }
+        } catch {
+          errors.push(`careerOpsDir does not exist: ${dir}`);
+        }
+        try {
+          await Deno.stat(`${dir}/set-status.mjs`);
+        } catch {
+          errors.push(
+            `set-status.mjs not found in ${dir} — write-back needs career-ops' canonical writer`,
+          );
+        }
+        return errors.length ? { pass: false, errors } : { pass: true };
+      },
+    },
+  },
   resources: {
     "application": {
       description: "A single application row mirrored from the tracker.",

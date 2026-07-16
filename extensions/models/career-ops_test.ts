@@ -76,3 +76,21 @@ Deno.test("import-all: throws when the tracker file is missing (no writes)", asy
   await assert.rejects(() => importAll({}, context));
   assert.equal(writes.length, 0);
 });
+
+// deno-lint-ignore no-explicit-any
+const preflight = (model as any).checks["career-ops-present"].execute;
+
+Deno.test("set-status pre-flight: fails when careerOpsDir is missing", async () => {
+  const res = await preflight({ globalArgs: { careerOpsDir: "/no/such/dir" } });
+  assert.equal(res.pass, false);
+  assert.ok(res.errors.some((e: string) => e.includes("careerOpsDir")));
+  assert.ok(res.errors.some((e: string) => e.includes("set-status.mjs")));
+});
+
+Deno.test("set-status pre-flight: passes when the dir and set-status.mjs exist", async () => {
+  const dir = await Deno.makeTempDir();
+  await Deno.writeTextFile(`${dir}/set-status.mjs`, "// stub\n");
+  const res = await preflight({ globalArgs: { careerOpsDir: dir } });
+  assert.equal(res.pass, true);
+  await Deno.remove(dir, { recursive: true });
+});
