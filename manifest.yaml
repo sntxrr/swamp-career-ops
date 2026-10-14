@@ -1,8 +1,9 @@
 manifestVersion: 1
 name: "@sntxrr/career-ops"
-version: "2026.07.16.2"
+version: "2026.10.14.1"
 description: "Mirrors the career-ops job-application tracker into swamp with bidirectional status write-back, posting URL + legitimacy enrichment, and a pipeline funnel report."
 
+license: MIT
 repository: https://github.com/sntxrr/swamp-career-ops
 
 additionalFiles:
