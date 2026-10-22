@@ -192,6 +192,7 @@ async function runSetStatus(
   if (args.dryRun) cmdArgs.push("--dry-run");
   cmdArgs.push("--json");
 
+  // swamp-quality-ignore deno-command: runs career-ops own set-status.mjs writer with an argv array (no shell); args are selector/status/note/role, and this model handles no credentials
   const command = new Deno.Command("node", {
     args: cmdArgs,
     cwd: careerOpsDir,
@@ -219,6 +220,18 @@ export const model = {
   type: "@sntxrr/career-ops",
   version: "2026.07.16.2",
   globalArguments: GlobalArgsSchema,
+
+  // No-op baseline at the current version. It migrates nothing; it exists so
+  // an instance authored for an older typeVersion is stamped forward instead
+  // of stranded, and so the next version bump extends a chain rather than
+  // starting one. A real schema change adds its own entry after this one.
+  upgrades: [
+    {
+      toVersion: "2026.07.16.2",
+      description: "Baseline upgrade chain; migrates nothing.",
+      upgradeAttributes: (old: Record<string, unknown>) => old,
+    },
+  ],
   reports: ["@sntxrr/career-ops-pipeline-status"],
   checks: {
     "career-ops-present": {
